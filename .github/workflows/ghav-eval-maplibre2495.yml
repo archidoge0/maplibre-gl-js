@@ -1,0 +1,66 @@
+name: GHAV MapLibre 2495 GL core
+
+on:
+  push:
+    branches: [codex/ghav-maplibre2495-*]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: Unit tests and Coverage
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+      - name: Start display server
+        run: |
+          nohup Xvfb &
+          echo "DISPLAY=:0" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run jest-ci -- --coverage --coverageReporters text html-spa --selectProjects unit
+      - name: Upload unit test coverage
+        if: success() || failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unit-test-coverage
+          path: ${{ github.workspace }}/coverage
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+      - run: npm ci
+      - run: npm run build-dist
+      - run: npm run test-integration
+        if: success() || failure()
+  render-tests:
+    name: Render tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+      - run: npm ci
+      - name: Start display server
+        run: |
+          nohup Xvfb &
+          echo "DISPLAY=:0" >> "$GITHUB_ENV"
+      - run: npm run test-render -- --report
+        if: success() || failure()
+      - name: Upload render test failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: render-test-report-ubuntu-22.04
+          path: ${{ github.workspace }}/test/integration/render/results.html
