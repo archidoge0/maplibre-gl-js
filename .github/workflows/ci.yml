@@ -127,8 +127,18 @@ jobs:
           architecture: x64
       - run: npm ci
       - run: npm run build-dev
-      - run: DETECT_CHROMEDRIVER_VERSION=true npm install -g chromedriver
-      - run: npm install -g geckodriver@2.0.4
+      - name: Use hosted matching ChromeDriver
+        run: |
+          test -x "$CHROMEWEBDRIVER/chromedriver"
+          "$CHROMEWEBDRIVER/chromedriver" --version
+          google-chrome --version
+          echo "$CHROMEWEBDRIVER" >> "$GITHUB_PATH"
+      - name: Use hosted matching GeckoDriver
+        run: |
+          test -x "$GECKOWEBDRIVER/geckodriver"
+          "$GECKOWEBDRIVER/geckodriver" --version
+          firefox --version
+          echo "$GECKOWEBDRIVER" >> "$GITHUB_PATH
       - name: Test Chrome
         env:
           SELENIUM_BROWSER: chrome
