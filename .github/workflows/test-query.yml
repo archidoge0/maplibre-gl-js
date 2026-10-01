@@ -1,0 +1,31 @@
+name: Test Query
+
+on:
+  push:
+    branches: ['codex/ghav-maplibre353-complete-*']
+
+jobs:
+  test_query:
+    name: ubuntu-22.04
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: d861b637a1e9cee504f4085affa990d89389c59c
+      - name: Use Node.js 14 x64
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 14.21.3
+          architecture: x64
+      - run: npm ci
+      - run: npm run build-dev
+      - run: npm run test-query
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          path: ./test/integration/query-tests
+          name: querytests
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          path: ./test/integration/query-tests/index.html
+          name: querytests.html
