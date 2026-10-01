@@ -138,7 +138,7 @@ jobs:
           test -x "$GECKOWEBDRIVER/geckodriver"
           "$GECKOWEBDRIVER/geckodriver" --version
           firefox --version
-          echo "$GECKOWEBDRIVER" >> "$GITHUB_PATH
+          echo "$GECKOWEBDRIVER" >> "$GITHUB_PATH"
       - name: Test Chrome
         env:
           SELENIUM_BROWSER: chrome
