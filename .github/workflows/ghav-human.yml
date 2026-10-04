@@ -1,0 +1,91 @@
+name: "ghav human: Tests"
+"on":
+  push:
+    branches:
+      - ghav/dev/2495
+    paths:
+      - .ghav/human
+permissions:
+  checks: write
+  pull-requests: write
+  contents: write
+jobs:
+  unit-tests:
+    name: Unit tests and Coverage
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.16.0
+      - name: Start display server
+        if: runner.os == 'Linux'
+        run: nohup Xvfb & echo "DISPLAY=:0" >> $GITHUB_ENV
+      - run: npm ci
+      - run: npm run jest-ci -- --coverage --coverageReporters text html-spa --selectProjects unit
+  integration-tests:
+    name: Integration tests
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.16.0
+      - name: Disable AppArmor
+        if: runner.os == 'Linux'
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+      - run: npm ci
+      - run: npm run build-dist
+      - run: npm run test-integration
+        if: success() || failure()
+  render-tests:
+    name: Render tests
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.16.0
+      - run: npm ci
+      - name: Start display server
+        if: runner.os == 'Linux'
+        run: nohup Xvfb & echo "DISPLAY=:0" >> $GITHUB_ENV
+      - run: npm run test-render -- --report
+        if: success() || failure()
+      - name: Upload render test failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-test-report-${{ matrix.os }}
+          path: ${{ github.workspace }}/test/integration/render/results.html
+  build-tests:
+    name: Build tests
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.16.0
+      - run: npm ci
+      - run: npm run build-dist
+      - run: npm run test-build
+        if: success() || failure()
